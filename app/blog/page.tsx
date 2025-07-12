@@ -1,16 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
 import { PostCard } from '@/components/blog/post-card'
 import { SearchBar } from '@/components/blog/search-bar'
 import { Pagination } from '@/components/blog/pagination'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { posts as mockPosts } from '@/lib/mockData'
 
 export default function BlogPage() {
-  const { data: session } = useSession()
-  const [posts, setPosts] = useState([])
+  const [posts, setPosts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [pagination, setPagination] = useState({ page: 1, limit: 9, total: 0, pages: 0 })
   const [searchQuery, setSearchQuery] = useState('')
@@ -21,56 +20,43 @@ export default function BlogPage() {
     fetchPosts()
   }, [pagination.page, searchQuery, selectedTag])
 
-  const fetchPosts = async () => {
+  const fetchPosts = () => {
     setLoading(true)
-    try {
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString(),
-        search: searchQuery,
-        tag: selectedTag,
-      })
+    let filtered = [...mockPosts]
 
-      const response = await fetch(`/api/posts?${params}`)
-      if (response.ok) {
-        const data = await response.json()
-        setPosts(data.posts)
-        setPagination(data.pagination)
-        
-        // Extract unique tags
-        const allTags = data.posts
-          .filter((post: any) => post.tags)
-          .flatMap((post: any) => post.tags.split(',').map((tag: string) => tag.trim()))
-        setTags([...new Set(allTags)])
-      }
-    } catch (error) {
-      console.error('Error fetching posts:', error)
-    } finally {
-      setLoading(false)
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      filtered = filtered.filter(p =>
+        p.title.toLowerCase().includes(q) ||
+        p.content.toLowerCase().includes(q)
+      )
     }
+
+    if (selectedTag) {
+      filtered = filtered.filter(p => p.tags?.toLowerCase().includes(selectedTag.toLowerCase()))
+    }
+
+    const total = filtered.length
+    const pages = Math.ceil(total / pagination.limit)
+    const start = (pagination.page - 1) * pagination.limit
+    const pagePosts = filtered.slice(start, start + pagination.limit).map(p => ({ ...p, isLiked: false }))
+
+    const allTags = filtered
+      .filter(p => p.tags)
+      .flatMap(p => p.tags!.split(',').map(tag => tag.trim()))
+    setTags(Array.from(new Set(allTags)))
+
+    setPosts(pagePosts)
+    setPagination(prev => ({ ...prev, total, pages }))
+    setLoading(false)
   }
 
-  const handleLike = async (postId: string) => {
-    if (!session) {
-      window.location.href = '/auth/signin'
-      return
-    }
-
-    try {
-      const response = await fetch(`/api/posts/${postId}/like`, {
-        method: 'POST',
-      })
-      if (response.ok) {
-        // Update the post in the list
-        setPosts(posts.map((post: any) => 
-          post.id === postId 
-            ? { ...post, _count: { ...post._count, likes: post._count.likes + (post.isLiked ? -1 : 1) }, isLiked: !post.isLiked }
-            : post
-        ))
-      }
-    } catch (error) {
-      console.error('Error toggling like:', error)
-    }
+  const handleLike = (postId: string) => {
+    setPosts(posts.map((post: any) =>
+      post.id === postId
+        ? { ...post, _count: { ...post._count, likes: post._count.likes + (post.isLiked ? -1 : 1) }, isLiked: !post.isLiked }
+        : post
+    ))
   }
 
   const handlePageChange = (page: number) => {

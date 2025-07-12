@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
 import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
@@ -10,10 +9,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { CommentSection } from '@/components/blog/comment-section'
-import { FacebookShareButton, TwitterShareButton, LinkedinShareButton } from 'react-share'
+import { posts as mockPosts } from '@/lib/mockData'
 
 export default function BlogPost() {
-  const { data: session } = useSession()
   const params = useParams()
   const [post, setPost] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -25,68 +23,37 @@ export default function BlogPost() {
     }
   }, [params.slug])
 
-  const fetchPost = async (slug: string) => {
-    try {
-      // First, get the post by slug
-      const response = await fetch(`/api/posts?slug=${slug}&limit=1`)
-      if (response.ok) {
-        const data = await response.json()
-        if (data.posts.length > 0) {
-          const postData = data.posts[0]
-          
-          // Then get full post details with comments
-          const detailResponse = await fetch(`/api/posts/${postData.id}`)
-          if (detailResponse.ok) {
-            const fullPost = await detailResponse.json()
-            setPost(fullPost)
-          }
+  const fetchPost = (slug: string) => {
+    const p = mockPosts.find((post) => post.slug === slug)
+    if (p) {
+      setPost({ ...p })
+    }
+    setLoading(false)
+  }
+
+  const handleLike = () => {
+    setLiked(!liked)
+    setPost({ ...post, _count: { ...post._count, likes: post._count.likes + (liked ? -1 : 1) } })
+  }
+
+  const handleCommentSubmit = (content: string, parentId?: string) => {
+    const newComment = {
+      id: Math.random().toString(),
+      content,
+      createdAt: new Date().toISOString(),
+      author: { id: '2', name: 'You' },
+      replies: [] as any[]
+    }
+    if (parentId) {
+      const updatedComments = post.comments.map((c: any) => {
+        if (c.id === parentId) {
+          return { ...c, replies: [...(c.replies || []), newComment] }
         }
-      }
-    } catch (error) {
-      console.error('Error fetching post:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleLike = async () => {
-    if (!session) {
-      window.location.href = '/auth/signin'
-      return
-    }
-
-    try {
-      const response = await fetch(`/api/posts/${post.id}/like`, {
-        method: 'POST',
+        return c
       })
-      if (response.ok) {
-        const data = await response.json()
-        setLiked(data.liked)
-        setPost({ ...post, _count: { ...post._count, likes: data.likeCount } })
-      }
-    } catch (error) {
-      console.error('Error toggling like:', error)
-    }
-  }
-
-  const handleCommentSubmit = async (content: string, parentId?: string) => {
-    try {
-      const response = await fetch('/api/comments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content,
-          postId: post.id,
-          parentId,
-        }),
-      })
-
-      if (response.ok) {
-        // Refresh post to get updated comments
-        fetchPost(params.slug as string)
-      }
-    } catch (error) {
-      console.error('Error submitting comment:', error)
+      setPost({ ...post, comments: updatedComments })
+    } else {
+      setPost({ ...post, comments: [...post.comments, newComment] })
     }
   }
 
@@ -162,7 +129,7 @@ export default function BlogPost() {
 
             {tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-6">
-                {tags.map((tag, index) => (
+                {tags.map((tag: string, index: number) => (
                   <Badge key={index} variant="secondary">
                     <Tag className="h-3 w-3 mr-1" />
                     {tag}
@@ -190,15 +157,15 @@ export default function BlogPost() {
 
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Share:</span>
-              <FacebookShareButton url={shareUrl} quote={post.title}>
+              <a href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`} target="_blank" rel="noopener noreferrer">
                 <Button variant="outline" size="sm">Facebook</Button>
-              </FacebookShareButton>
-              <TwitterShareButton url={shareUrl} title={post.title}>
+              </a>
+              <a href={`https://twitter.com/intent/tweet?url=${shareUrl}&text=${post.title}`} target="_blank" rel="noopener noreferrer">
                 <Button variant="outline" size="sm">Twitter</Button>
-              </TwitterShareButton>
-              <LinkedinShareButton url={shareUrl} title={post.title}>
+              </a>
+              <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`} target="_blank" rel="noopener noreferrer">
                 <Button variant="outline" size="sm">LinkedIn</Button>
-              </LinkedinShareButton>
+              </a>
             </div>
           </div>
 

@@ -7,10 +7,11 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Check, X, Trash2 } from 'lucide-react'
+import { posts as mockPosts } from '@/lib/mockData'
 import { formatDistanceToNow } from 'date-fns'
 
 export default function AdminComments() {
-  const [comments, setComments] = useState([])
+  const [comments, setComments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
 
@@ -18,52 +19,22 @@ export default function AdminComments() {
     fetchComments()
   }, [filter])
 
-  const fetchComments = async () => {
-    try {
-      const params = new URLSearchParams({
-        limit: '50',
-        ...(filter !== 'all' && { status: filter })
-      })
-
-      const response = await fetch(`/api/comments?${params}`)
-      if (response.ok) {
-        const data = await response.json()
-        setComments(data.comments)
-      }
-    } catch (error) {
-      console.error('Error fetching comments:', error)
-    } finally {
-      setLoading(false)
+  const fetchComments = () => {
+    let all = mockPosts.flatMap(post => post.comments.map(c => ({ ...c, post })))
+    if (filter !== 'all') {
+      all = all.filter(c => (c as any).status ? (c as any).status === filter : true)
     }
+    setComments(all)
+    setLoading(false)
   }
 
-  const updateCommentStatus = async (commentId: string, status: string) => {
-    try {
-      const response = await fetch(`/api/comments/${commentId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      })
-      if (response.ok) {
-        fetchComments()
-      }
-    } catch (error) {
-      console.error('Error updating comment:', error)
-    }
+  const updateCommentStatus = (commentId: string, status: string) => {
+    setComments(comments.map((c: any) => c.id === commentId ? { ...c, status } : c))
   }
 
-  const deleteComment = async (commentId: string) => {
+  const deleteComment = (commentId: string) => {
     if (confirm('Are you sure you want to delete this comment?')) {
-      try {
-        const response = await fetch(`/api/comments/${commentId}`, {
-          method: 'DELETE',
-        })
-        if (response.ok) {
-          fetchComments()
-        }
-      } catch (error) {
-        console.error('Error deleting comment:', error)
-      }
+      setComments(comments.filter((c: any) => c.id !== commentId))
     }
   }
 
