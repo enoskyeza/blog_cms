@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { TrendingUp, MessageCircle, Heart, FileText } from 'lucide-react'
+import { posts as mockPosts } from '@/lib/mockData'
 
 interface AnalyticsData {
   overview: {
@@ -35,18 +36,23 @@ export function AnalyticsDashboard() {
     fetchAnalytics()
   }, [])
 
-  const fetchAnalytics = async () => {
-    try {
-      const response = await fetch('/api/analytics')
-      if (response.ok) {
-        const data = await response.json()
-        setAnalytics(data)
-      }
-    } catch (error) {
-      console.error('Error fetching analytics:', error)
-    } finally {
-      setLoading(false)
-    }
+  const fetchAnalytics = () => {
+    const totalPosts = mockPosts.length
+    const totalComments = mockPosts.reduce((acc, p) => acc + p.comments.length, 0)
+    const totalLikes = mockPosts.reduce((acc, p) => acc + p._count.likes, 0)
+    const popularPosts = mockPosts.slice(0, 5)
+
+    setAnalytics({
+      overview: {
+        totalPosts,
+        totalComments,
+        totalLikes,
+        recentPosts: totalPosts
+      },
+      popularPosts,
+      commentStats: {}
+    })
+    setLoading(false)
   }
 
   if (loading) {

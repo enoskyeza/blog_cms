@@ -1,32 +1,17 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { LayoutDashboard, FileText, MessageCircle, BarChart3, LogOut } from 'lucide-react'
-import { signOut } from 'next-auth/react'
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { data: session, status } = useSession()
   const router = useRouter()
-
-  useEffect(() => {
-    if (status === 'loading') return // Still loading
-
-    // if (!session || session.user.role !== 'ADMIN') {
-    //   router.push('/auth/signin')
-    // }
-  }, [session, status, router])
-
-  if (status === 'loading') {
-    return <div>Loading...</div>
-  }
 
   // if (!session || session.user.role !== 'ADMIN') {
   //   return null
@@ -64,7 +49,7 @@ export default function AdminLayout({
             <Button
               variant="outline"
               className="w-full justify-start gap-2"
-              onClick={() => signOut()}
+              onClick={() => router.push('/auth/signin')}
             >
               <LogOut className="h-4 w-4" />
               Sign Out

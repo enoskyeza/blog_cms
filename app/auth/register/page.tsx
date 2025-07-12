@@ -23,20 +23,7 @@ export default function Register() {
     setError('')
 
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
-      })
-
-      if (response.ok) {
-        router.push('/auth/signin?message=Registration successful')
-      } else {
-        const data = await response.json()
-        setError(data.error || 'Registration failed')
-      }
-    } catch (error) {
-      setError('An error occurred during registration')
+      router.push('/auth/signin')
     } finally {
       setLoading(false)
     }

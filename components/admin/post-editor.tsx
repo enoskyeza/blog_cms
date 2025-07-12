@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import dynamic from 'next/dynamic'
 import { Calendar, Save, Eye, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,9 +11,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { postSchema } from '@/lib/validations'
-import 'react-quill/dist/quill.snow.css'
-
-const ReactQuill = dynamic(() => import('react-quill'), { ssr: false })
 
 interface PostEditorProps {
   post?: any
@@ -43,16 +39,6 @@ export function PostEditor({ post, onSave, onCancel }: PostEditorProps) {
     onSave({ ...data, content })
   }
 
-  const modules = {
-    toolbar: [
-      [{ header: [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ list: 'ordered' }, { list: 'bullet' }],
-      ['blockquote', 'code-block'],
-      ['link', 'image'],
-      ['clean']
-    ],
-  }
 
   return (
     <div className="space-y-6">
@@ -90,11 +76,11 @@ export function PostEditor({ post, onSave, onCancel }: PostEditorProps) {
                       {...form.register('title')}
                       placeholder="Enter post title..."
                     />
-                    {form.formState.errors.title && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {form.formState.errors.title.message}
-                      </p>
-                    )}
+                      {form.formState.errors.title && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {String(form.formState.errors.title.message)}
+                        </p>
+                      )}
                   </div>
 
                   <div>
@@ -109,15 +95,12 @@ export function PostEditor({ post, onSave, onCancel }: PostEditorProps) {
 
                   <div>
                     <Label>Content</Label>
-                    <div className="min-h-[400px]">
-                      <ReactQuill
-                        theme="snow"
-                        value={content}
-                        onChange={setContent}
-                        modules={modules}
-                        placeholder="Write your post content..."
-                      />
-                    </div>
+                    <Textarea
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      placeholder="Write your post content..."
+                      rows={10}
+                    />
                   </div>
                 </CardContent>
               </Card>

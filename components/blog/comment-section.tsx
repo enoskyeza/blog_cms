@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useSession } from 'next-auth/react'
 import { formatDistanceToNow } from 'date-fns'
 import { MessageCircle, Reply } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -28,7 +27,7 @@ interface CommentSectionProps {
 }
 
 export function CommentSection({ postId, comments, onCommentSubmit }: CommentSectionProps) {
-  const { data: session } = useSession()
+  const isLoggedIn = true
   const [newComment, setNewComment] = useState('')
   const [replyTo, setReplyTo] = useState<string | null>(null)
   const [replyContent, setReplyContent] = useState('')
@@ -66,7 +65,7 @@ export function CommentSection({ postId, comments, onCommentSubmit }: CommentSec
               </span>
             </div>
             <p className="text-sm mb-2">{comment.content}</p>
-            {!isReply && session && (
+            {!isReply && isLoggedIn && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -117,7 +116,7 @@ export function CommentSection({ postId, comments, onCommentSubmit }: CommentSec
         Comments ({comments.length})
       </h3>
 
-      {session ? (
+      {isLoggedIn ? (
         <form onSubmit={handleSubmit} className="mb-8">
           <Textarea
             placeholder="Share your thoughts..."

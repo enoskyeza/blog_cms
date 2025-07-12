@@ -6,65 +6,45 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { PostEditor } from '@/components/admin/post-editor'
 import { Plus, Edit, Trash2, Eye } from 'lucide-react'
+import { posts as mockPosts, Post } from '@/lib/mockData'
 import { formatDistanceToNow } from 'date-fns'
 
 export default function AdminPosts() {
-  const [posts, setPosts] = useState([])
+  const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [showEditor, setShowEditor] = useState(false)
-  const [editingPost, setEditingPost] = useState(null)
+  const [editingPost, setEditingPost] = useState<Post | null>(null)
 
   useEffect(() => {
     fetchPosts()
   }, [])
 
-  const fetchPosts = async () => {
-    try {
-      const response = await fetch('/api/posts?status=all&limit=50')
-      if (response.ok) {
-        const data = await response.json()
-        setPosts(data.posts)
-      }
-    } catch (error) {
-      console.error('Error fetching posts:', error)
-    } finally {
-      setLoading(false)
-    }
+  const fetchPosts = () => {
+    setPosts(mockPosts)
+    setLoading(false)
   }
 
-  const handleSave = async (data: any) => {
-    try {
-      const url = editingPost ? `/api/posts/${editingPost.id}` : '/api/posts'
-      const method = editingPost ? 'PUT' : 'POST'
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-
-      if (response.ok) {
-        fetchPosts()
-        setShowEditor(false)
-        setEditingPost(null)
+  const handleSave = (data: any) => {
+    if (editingPost) {
+      setPosts(posts.map((p: Post) => p.id === editingPost.id ? { ...editingPost, ...data } : p))
+    } else {
+      const newPost: Post = {
+        id: Math.random().toString(),
+        _count: { likes: 0, comments: 0 },
+        comments: [],
+        ...data,
+        publishedAt: new Date().toISOString(),
+        author: { id: '1', name: 'Admin' }
       }
-    } catch (error) {
-      console.error('Error saving post:', error)
+      setPosts([newPost, ...posts])
     }
+    setShowEditor(false)
+    setEditingPost(null)
   }
 
-  const handleDelete = async (postId: string) => {
+  const handleDelete = (postId: string) => {
     if (confirm('Are you sure you want to delete this post?')) {
-      try {
-        const response = await fetch(`/api/posts/${postId}`, {
-          method: 'DELETE',
-        })
-        if (response.ok) {
-          fetchPosts()
-        }
-      } catch (error) {
-        console.error('Error deleting post:', error)
-      }
+      setPosts(posts.filter((p: Post) => p.id !== postId))
     }
   }
 
